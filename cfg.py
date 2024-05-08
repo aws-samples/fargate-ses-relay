@@ -4,18 +4,24 @@
 # Application Configuration
 # Note: changing the APP_NAME will result in a new stack being provisioned
 APP_NAME = "SESRELAY"
-APP_VERSION = "version 0.1"
+APP_VERSION = "version 0.2"
 CFN_STACK_DESCRIPTION = "FargateSESRelay (" + APP_VERSION + ")"
 
 # Network options
- 
-VPC_CIDR = "10.21.0.0/16"
+
+# Deploy to existing VPC, or create a new VPC
+EXISTING_VPC = False # True/False.
+VPC_ID = "vpc-1234567890abcde" # VPC ID of existing VPC to deploy to. Only applies when EXISTING_VPC=True above, ignored otherwise.
+VPC_CIDR = "10.21.0.0/16" # CIDR to use when creating a new VPC. Only applies when EXISTING_VPC=False above, ignored otherwise.
+
 # Configure load balancer to be Internet-facing. True/False.
 # WARNING: Setting this to TRUE CAN result in an open PUBLIC relay! Use at own risk. Only use if you have also set ALLOWED_CLIENTS and ALLOWED_HELO_DOMAINS appropriately.
 PUBLIC_LOAD_BALANCER = False
+
 # Allow list of clients that can access the services. Used for VPC Security Groups, and for the Postfix 'mynetworks' configuration.
+# NOTE: You need to add ALL client subnets/ips here, including your VPC CIDR(s)
 ALLOWED_CLIENTS = [
-        VPC_CIDR, # Allow access from the VPC
+        "10.21.0.0/16" # Allow access from the VPC
         #"192.168.0.0/16", # Allow access from a specific subnet
         #"10.25.7.123/32" # Allow access from a specific IP address
     ]

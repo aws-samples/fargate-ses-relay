@@ -53,9 +53,11 @@ Configuration options are defined in `cfg.py`. They are used by CDK for deployin
 
 | Option | Default | Description|
 |--------|---------|------------|
-|VPC_CIDR|10.21.0.0/16|CIDR to use for the provisioned VPC.|
+|EXISTING_VPC|False|True/False. Set this to `True` if deploying to an existing VPC. If set to `False` - a new VPC will be created.|
+|VPC_ID|vpc-1234567890abcde|VPC ID of existing VPC to deploy to. Only applies when EXISTING_VPC=True above, ignored otherwise.|
+|VPC_CIDR|10.21.0.0/16|CIDR to use for a newly provisioned VPC. Only applies when EXISTING_VPC=False above, ignored otherwise|
 |PUBLIC_LOAD_BALANCER|False|True/False. Configure provisioned Network Load Balancer as Internet-facing. *WARNING:* Setting this to `True` *CAN* result in an open PUBLIC relay! Use at own risk. Only use if you have also set ALLOWED_CLIENTS and ALLOWED_HELO_DOMAINS appropriately.|
-|ALLOWED_CLIENTS|VPC_CIDR|List of IP ranges allowed to access Postfix. Used for definitions of VPC Security Groups, and the Postfix `mynetworks` configuration parameter.|
+|ALLOWED_CLIENTS|["10.21.0.0"]|List of IP ranges allowed to access Postfix. Used for definitions of VPC Security Groups, and the Postfix `mynetworks` configuration parameter.|
 |ENABLE_HELO_DOMAIN_RESTRICTIONS|True|Allow list of domains that clients can use during the HELO/EHLO handshake, see Postfix 'smtpd_helo_restrictions' and 'check_helo_access' configuration. You can turn this feature off by setting this to `False` and and specifying an empty domain list in ALLOWED_HELO_DOMAINS| 
 |ALLOWED_HELO_DOMAINS|[]|List of permitted HELO domains if ENABLE_HELO_DOMAIN_RESTRICTIONS is set to `True`.|
 |TASK_CPU|1024| Integer. Task CPU (see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html)|
@@ -63,7 +65,7 @@ Configuration options are defined in `cfg.py`. They are used by CDK for deployin
 |TASK_COUNT|1| Integer. Minimum number of concurrent tasks|
 |AUTOSCALE_MAX_TASKS|10|Integer. Maximum number of concurrent tasks|
 |TASK_ENABLE_EXEC_COMMAND|False|True/False. Enable ECS Exec for ssh access to tasks for debugging (see https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html). |
-|BUILD_PLATFORM|linux/arm64|CPU architecture of the task - "linux/arm64" for Graviton, "linux/amd64" for X86_64|
+|BUILD_PLATFORM|linux/arm64|CPU architecture of the task - "linux/arm64" for Graviton, "linux/amd64" for X86_64. See https://docs.docker.com/build/building/multi-platform/ and troubleshooting notes below if deploying to Graviton.|
 |POSTFIX_SMTP_PORT|25| Port mapping for the container, it does NOT affect the Postfix default listening port. Do not change.|
 |SES_SMTP_ENDPOINT|email-smtp.us-east-1.amazonaws.com| SES endpoint to use. SES endpoints are regional.|
 |SES_SMTP_SECRET_ARN|arn:aws:secretsmanager:us-east-1:123456789123:secret:ses_smtp_secret-ABCEFG| ARN of the secret to get SES credentials from. Please see the SES Setup section.|
@@ -87,6 +89,10 @@ Generally, the steps to deploy the solution on an [Amazon Linux 2](https://aws.a
 6. Install required Python packages (`pip3 install -r requirements.txt`)
 7. Configure the application (see [Configuration](#configuration) section)
 5. Deploy Application (`cdk synth`, `cdk deploy`)
+
+## Troubleshooting
+
+1. If deploying to Graviton (BUILD_PLATFORM=linux/arm64), please ensure your Docker build environment is configured for multi-platform builds (https://docs.docker.com/build/building/multi-platform/) If you get an error similar to "Deployment failed: Error: Failed to build asset 09f2f3919be2c8897bf4013b37ca40243ac484a074651ce13af9f7ca9fbb7e4b" - try building with BUILD_PLATFORM=linux/amd64.
 
 ## Cleanup
 

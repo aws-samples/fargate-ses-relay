@@ -8,6 +8,7 @@ from aws_cdk import (
 	App,
 	CfnOutput,
 	Duration,
+	Environment,
 	Stack,
 	RemovalPolicy,
 	aws_ec2 as ec2,
@@ -33,32 +34,37 @@ class FargateSESStack(Stack):
 		account = self.account
 		
 		# VPC
-		vpc = ec2.Vpc(
-			scope=self,
-			id='VPC',
-			max_azs=3,
-			ip_addresses=ec2.IpAddresses.cidr(cfg.VPC_CIDR),
-			subnet_configuration=[
-				# modify here to change the types of subnets provisioned as part of the VPC
-				ec2.SubnetConfiguration(
-					subnet_type=ec2.SubnetType.PUBLIC, 
-					name="Public", 
-					cidr_mask=24
-				),
-				ec2.SubnetConfiguration(
-					subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
-					name="PrivateWithEgress",
-					cidr_mask=24,
-				),
-				#ec2.SubnetConfiguration(
-				#	subnet_type=ec2.SubnetType.PRIVATE_ISOLATED, 
-				#	name="PrivateIsolated",
-				#	cidr_mask=24,
-				#),
-			],
-			nat_gateway_provider=ec2.NatProvider.gateway(),
-			nat_gateways=1,  # Only provision 1 NAT GW - default is one per one per AZ
-		)
+		if cfg.EXISTING_VPC :
+			# Import existing VPC into the stack
+			vpc = ec2.Vpc.from_lookup(scope=self, id='VPC', vpc_id = cfg.VPC_ID)
+		else :
+			# Create a new VPC
+			vpc = ec2.Vpc(
+				scope=self,
+				id='VPC',
+				max_azs=3,
+				ip_addresses=ec2.IpAddresses.cidr(cfg.VPC_CIDR),
+				subnet_configuration=[
+					# modify here to change the types of subnets provisioned as part of the VPC
+					ec2.SubnetConfiguration(
+						subnet_type=ec2.SubnetType.PUBLIC, 
+						name="Public", 
+						cidr_mask=24
+					),
+					ec2.SubnetConfiguration(
+						subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
+						name="PrivateWithEgress",
+						cidr_mask=24,
+					),
+					#ec2.SubnetConfiguration(
+					#	subnet_type=ec2.SubnetType.PRIVATE_ISOLATED, 
+					#	name="PrivateIsolated",
+					#	cidr_mask=24,
+					#),
+				],
+				nat_gateway_provider=ec2.NatProvider.gateway(),
+				nat_gateways=1,  # Only provision 1 NAT GW - default is one per one per AZ
+			)
 
 		# VPC Endpoint for ECR API
 		#ecr_api_if_vpce = vpc.vpc.add_interface_endpoint("EcrApiEndpoint",service=ec2.InterfaceVpcEndpointAwsService.ECR)
@@ -223,7 +229,7 @@ class FargateSESStack(Stack):
 
 app = App()
 
-ses_relay_stack = FargateSESStack(app, cfg.APP_NAME, description=cfg.CFN_STACK_DESCRIPTION
+ses_relay_stack = FargateSESStack(app, cfg.APP_NAME, description=cfg.CFN_STACK_DESCRIPTION,
 	# If you don't specify 'env', this stack will be environment-agnostic.
 	# Account/Region-dependent features and context lookups will not work,
 	# but a single synthesized template can be deployed anywhere.
@@ -231,7 +237,7 @@ ses_relay_stack = FargateSESStack(app, cfg.APP_NAME, description=cfg.CFN_STACK_D
 	# Uncomment the next line to specialize this stack for the AWS Account
 	# and Region that are implied by the current CLI configuration.
 
-	#env=cdk.Environment(account=os.getenv('CDK_DEFAULT_ACCOUNT'), region=os.getenv('CDK_DEFAULT_REGION')),
+	env=Environment(account=os.getenv('CDK_DEFAULT_ACCOUNT'), region=os.getenv('CDK_DEFAULT_REGION')),
 
 	# Uncomment the next line if you know exactly what Account and Region you
 	# want to deploy the stack to. */
